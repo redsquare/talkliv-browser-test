@@ -65,7 +65,11 @@ function generateRandomUserAgent() {
 (async () => {
   // 1. Generate Random Identity Data
   const randomId = crypto.randomBytes(4).toString('hex');
-  const firstName = `mrs${randomId}`;
+  
+  // Generate random name with only letters (A-Z, a-z)
+  const firstNames = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Quinn', 'Avery', 'Cameron', 'Dakota', 'Skyler', 'Jamie', 'Reese', 'Finley', 'Rowan', 'Charlie', 'Emery', 'Phoenix', 'Blake', 'Drew', 'Hayden', 'Kendall', 'Logan', 'Parker', 'Sage', 'Tatum', 'Peyton', 'Remy', 'Ellis', 'Marlowe'];
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  
   const lastName = `Test`;
   // Using a common burner domain pattern; replace with a real API for production
   const email = `tester_${randomId}@mail7.io`; 
