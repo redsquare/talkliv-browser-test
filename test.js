@@ -3,20 +3,63 @@ const crypto = require('crypto');
 
 // Generate a random user agent to avoid detection
 function generateRandomUserAgent() {
-  const chromeVersions = ['120.0.0.0', '121.0.0.0', '122.0.0.0', '123.0.0.0', '124.0.0.0', '125.0.0.0'];
-  const winVersions = ['10.0', '11.0'];
-  const macVersions = ['10_15_7', '11_0', '12_0', '13_0', '14_0'];
-  
   const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const chromeVersion = rand(chromeVersions);
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   
-  const platforms = [
-    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`,
-    `Mozilla/5.0 (Macintosh; Intel Mac OS X ${rand(macVersions)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`,
-    `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion} Safari/537.36`
+  // Chrome versions (recent)
+  const chromeVersions = ['120.0.0.0', '121.0.0.0', '122.0.0.0', '123.0.0.0', '124.0.0.0', '125.0.0.0', '126.0.0.0', '127.0.0.0', '128.0.0.0'];
+  
+  // Firefox versions (recent)
+  const firefoxVersions = ['121.0', '122.0', '123.0', '124.0', '125.0', '126.0', '127.0', '128.0'];
+  
+  // Edge versions
+  const edgeVersions = ['120.0.0.0', '121.0.0.0', '122.0.0.0', '123.0.0.0', '124.0.0.0', '125.0.0.0'];
+  
+  // Safari versions
+  const safariVersions = ['17.0', '17.1', '17.2', '17.3', '17.4', '16.6'];
+  const webkitVersions = ['605.1.15', '537.36'];
+  
+  // OS versions
+  const winVersions = ['10.0', '11.0'];
+  const winBuilds = ['19041', '19042', '19043', '19044', '19045', '22000', '22621', '22631'];
+  const macVersions = ['10_15_7', '11_0', '11_6', '12_0', '12_6', '13_0', '13_6', '14_0', '14_2', '14_3'];
+  const linuxDistros = ['X11; Linux x86_64', 'X11; Ubuntu; Linux x86_64', 'X11; Fedora; Linux x86_64'];
+  
+  const userAgents = [
+    // Chrome on Windows
+    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36`,
+    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36`,
+    
+    // Chrome on Mac
+    `Mozilla/5.0 (Macintosh; Intel Mac OS X ${rand(macVersions)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36`,
+    
+    // Chrome on Linux
+    `Mozilla/5.0 (${rand(linuxDistros)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36`,
+    
+    // Firefox on Windows
+    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; Win64; x64; rv:${rand(firefoxVersions)}) Gecko/20100101 Firefox/${rand(firefoxVersions)}`,
+    
+    // Firefox on Mac
+    `Mozilla/5.0 (Macintosh; Intel Mac OS X ${rand(macVersions)}; rv:${rand(firefoxVersions)}) Gecko/20100101 Firefox/${rand(firefoxVersions)}`,
+    
+    // Firefox on Linux
+    `Mozilla/5.0 (${rand(linuxDistros)}; rv:${rand(firefoxVersions)}) Gecko/20100101 Firefox/${rand(firefoxVersions)}`,
+    
+    // Edge on Windows
+    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36 Edg/${rand(edgeVersions)}`,
+    
+    // Safari on Mac
+    `Mozilla/5.0 (Macintosh; Intel Mac OS X ${rand(macVersions)}) AppleWebKit/${rand(webkitVersions)} (KHTML, like Gecko) Version/${rand(safariVersions)} Safari/${rand(webkitVersions)}`,
+    
+    // Opera on Windows
+    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36 OPR/${randInt(100, 110)}.0.0.0`,
+    
+    // Brave on Windows/Mac (looks like Chrome)
+    `Mozilla/5.0 (Windows NT ${rand(winVersions)}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36`,
+    `Mozilla/5.0 (Macintosh; Intel Mac OS X ${rand(macVersions)}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${rand(chromeVersions)} Safari/537.36`,
   ];
   
-  return rand(platforms);
+  return rand(userAgents);
 }
 
 (async () => {
