@@ -175,8 +175,8 @@ function generateRandomUserAgent() {
   } catch (error) {
     console.error("Script execution failed:", error);
   } finally {
-    // Keep open for manual inspection
-    await page.waitForTimeout(10000);
+    // Brief pause before closing
+    await page.waitForTimeout(3000);
     await browser.close();
   }
 })();
