@@ -5,6 +5,7 @@
   "main": "test.js",
   "scripts": {
     "test": "node test.js",
+    "test:bestdates": "node test-bestdates.js",
     "postinstall": "npx playwright install chromium"
   },
   "keywords": [
