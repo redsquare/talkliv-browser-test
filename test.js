@@ -22,7 +22,7 @@ function generateRandomUserAgent() {
 (async () => {
   // 1. Generate Random Identity Data
   const randomId = crypto.randomBytes(4).toString('hex');
-  const firstName = `User_${randomId}`;
+  const firstName = `mrs${randomId}`;
   const lastName = `Test`;
   // Using a common burner domain pattern; replace with a real API for production
   const email = `tester_${randomId}@mail7.io`; 
@@ -46,11 +46,40 @@ function generateRandomUserAgent() {
     // 2. Navigate to site
     await page.goto('https://talkliv.com/', { waitUntil: 'domcontentloaded' });
     
-    // 3. Handle cookie consent popup
-    const acceptCookies = page.getByRole('button', { name: 'Accept all' });
-    if (await acceptCookies.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await acceptCookies.click();
-      await page.waitForTimeout(500);
+    // 3. Handle cookie/privacy consent popup
+    console.log("Checking for privacy popup...");
+    await page.waitForTimeout(1000);
+    
+    // Try various common privacy popup button patterns
+    const privacySelectors = [
+      'button:has-text("Accept all")',
+      'button:has-text("Accept")',
+      'button:has-text("I Accept")',
+      'button:has-text("OK")',
+      'button:has-text("Allow")',
+      'button:has-text("Allow all")',
+      'button:has-text("Agree")',
+      'button:has-text("Got it")',
+      'button:has-text("Continue")',
+      '[class*="cookie"] button',
+      '[class*="consent"] button',
+      '[class*="privacy"] button',
+      '[id*="cookie"] button',
+      '[id*="consent"] button'
+    ];
+    
+    for (const selector of privacySelectors) {
+      try {
+        const btn = page.locator(selector).first();
+        if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
+          console.log(`Found privacy popup, clicking: ${selector}`);
+          await btn.click();
+          await page.waitForTimeout(500);
+          break;
+        }
+      } catch (e) {
+        // Continue to next selector
+      }
     }
     
     // 4. Fill registration form (all on one page)
@@ -66,8 +95,8 @@ function generateRandomUserAgent() {
     // Fill Birthday (format MM/DD/YYYY)
     await page.getByPlaceholder('MM/DD/YYYY').fill('05/15/1998');
     
-    // Check the terms checkbox by clicking its label (hidden checkbox pattern)
-    await page.locator('label:has-text("I have read")').click();
+    // Check the terms checkbox by clicking its label
+    await page.locator('label[for="terms-agree"]').click();
 
     // 5. Submit Initial Form
     await page.getByRole('button', { name: 'Get started' }).click();
