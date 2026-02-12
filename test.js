@@ -72,7 +72,7 @@ function generateRandomUserAgent() {
   
   const lastName = `Test`;
   // Using a common burner domain pattern; replace with a real API for production
-  const email = `scum_bags_${randomId}@mail7.io`; 
+  const email = `${firstName.toLowerCase()}_${randomId}@mail7.io`; 
   const password = `Pass_${randomId}!2026`;
   const userAgent = generateRandomUserAgent();
 
@@ -154,44 +154,194 @@ function generateRandomUserAgent() {
     console.log("Submitted initial form, waiting for next step...");
 
     // 6. Wait for and handle email/password step
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(5000); // Wait for next screen to load
     
     const emailInput = page.locator('input[type="email"]');
     if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       await emailInput.fill(email);
       console.log(`Filled email: ${email}`);
       
-      await page.fill('input[type="password"]', password);
+      const passwordInput = page.locator('input[type="password"]');
+      await passwordInput.fill(password);
       console.log(`Filled password`);
       
-      // Click submit/continue button - try multiple selectors
-      const submitSelectors = [
-        'button:has-text("Create account")',
-        'button:has-text("Sign up")',
-        'button:has-text("Complete")',
-        'button:has-text("Join")',
-        'button:has-text("Continue")',
-        'button[type="submit"]',
-        'form button'
-      ];
+      // Log the form we're working with
+      const form = page.locator('form').filter({ has: emailInput });
+      const formButtons = await form.locator('button').all();
+      console.log(`Found ${formButtons.length} buttons in form`);
+      for (const btn of formButtons) {
+        const text = await btn.textContent().catch(() => '');
+        console.log(`  Form button: "${text.trim()}"`);
+      }
       
-      for (const selector of submitSelectors) {
-        const btn = page.locator(selector).first();
-        if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
-          console.log(`Clicking submit button: ${selector}`);
-          await btn.click();
-          break;
+      // Click submit button within the form containing email input
+      const submitBtn = form.locator('button[type="submit"], button:has-text("Sign up"), button:has-text("Create")').first();
+      if (await submitBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        const btnText = await submitBtn.textContent().catch(() => '');
+        console.log(`Clicking form submit: "${btnText.trim()}"`);
+        
+        // Use force click and dispatch click event
+        await submitBtn.click({ force: true });
+        
+        // Also try JavaScript click as backup
+        await submitBtn.evaluate(node => node.click()).catch(() => {});
+        
+        // Wait for page changes
+        await page.waitForTimeout(5000);
+        
+        // Check if we navigated or if there's a new screen
+        const currentUrl = page.url();
+        console.log(`After submit - URL: ${currentUrl}`);
+        
+        // Check for any modal or overlay that appeared
+        const overlaySelectors = [
+          '[class*="modal"]',
+          '[class*="popup"]',
+          '[class*="overlay"]',
+          '[class*="dialog"]',
+          '[role="dialog"]'
+        ];
+        
+        for (const sel of overlaySelectors) {
+          const overlay = page.locator(sel).first();
+          if (await overlay.isVisible({ timeout: 500 }).catch(() => false)) {
+            console.log(`Found overlay: ${sel}`);
+            
+            // Try to click Accept/OK button in overlay
+            const acceptBtn = overlay.locator('button:has-text("Accept all"), button:has-text("Accept"), button:has-text("OK"), button:has-text("Continue")').first();
+            if (await acceptBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+              const btnText = await acceptBtn.textContent().catch(() => '');
+              console.log(`Clicking overlay accept: "${btnText.trim()}"`);
+              await acceptBtn.click();
+              await page.waitForTimeout(2000);
+              
+              // Now try clicking the sign up button again
+              if (await submitBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+                console.log("Retrying form submit after closing overlay...");
+                await submitBtn.click({ force: true });
+                await page.waitForTimeout(3000);
+              }
+            }
+            break;
+          }
+        }
+        
+        // Take a screenshot of current state for debugging
+        await page.screenshot({ path: './recordings/debug-after-signup.png' });
+        console.log(`Debug screenshot saved`);
+        
+      } else {
+        // Fallback: click any visible submit-like button
+        const fallbackSelectors = [
+          'button:has-text("Create account")',
+          'button:has-text("Sign up")',
+          'button:has-text("Complete")',
+          'button:has-text("Join")',
+          'button:has-text("Continue")',
+          'button[type="submit"]'
+        ];
+        
+        for (const selector of fallbackSelectors) {
+          const btn = page.locator(selector).first();
+          if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+            const btnText = await btn.textContent().catch(() => selector);
+            console.log(`Clicking fallback button: "${btnText.trim()}"`);
+            await btn.click();
+            break;
+          }
+        }
+      }
+      
+      console.log("Waiting for account creation...");
+      await page.waitForTimeout(3000);
+      
+      // Check current URL
+      const currentUrl = page.url();
+      console.log(`Current URL: ${currentUrl}`);
+      
+      await page.waitForTimeout(3000);
+    } else {
+      console.log("Email input not visible - checking for other flows...");
+      
+      // Maybe there's a different flow - log what's visible
+      const allInputs = await page.locator('input').all();
+      console.log(`Found ${allInputs.length} inputs on page`);
+      for (const inp of allInputs.slice(0, 5)) {
+        const type = await inp.getAttribute('type').catch(() => '');
+        const placeholder = await inp.getAttribute('placeholder').catch(() => '');
+        const visible = await inp.isVisible().catch(() => false);
+        if (visible) {
+          console.log(`  Input: type="${type}" placeholder="${placeholder}"`);
         }
       }
     }
 
-    // 7. Handle any onboarding steps
-    console.log("Navigating onboarding steps...");
-    for (let i = 0; i < 5; i++) {
-      await page.waitForTimeout(1500);
-      const nextBtn = page.locator('button:has-text("Next"), button:has-text("Skip"), button:has-text("Continue")').first();
-      if (await nextBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await nextBtn.click();
+    // 7. Handle profile creation / onboarding steps
+    console.log("Navigating profile creation steps...");
+    await page.waitForTimeout(3000); // Extra wait for profile page to load
+    
+    // Common button patterns for profile creation flows
+    const profileButtonSelectors = [
+      'button:has-text("Next")',
+      'button:has-text("Skip")',
+      'button:has-text("Continue")',
+      'button:has-text("Save")',
+      'button:has-text("Done")',
+      'button:has-text("Finish")',
+      'button:has-text("Complete")',
+      'button:has-text("Let\'s go")',
+      'button:has-text("Start")',
+      'button:has-text("Get started")',
+      'button:has-text("OK")',
+      'button:has-text("Got it")',
+      'button:has-text("Upload")',
+      'button:has-text("Add")',
+      'button:has-text("Set")',
+      '[data-testid*="next"]',
+      '[data-testid*="skip"]',
+      '[data-testid*="continue"]',
+      '.btn-primary',
+      '.btn-next',
+      '.next-btn'
+    ];
+    
+    // Click through up to 15 screens
+    for (let i = 0; i < 15; i++) {
+      await page.waitForTimeout(2000);
+      
+      // Debug: list all visible buttons
+      if (i === 0) {
+        const allButtons = await page.locator('button').all();
+        console.log(`Found ${allButtons.length} buttons on page`);
+        for (const btn of allButtons.slice(0, 5)) {
+          const text = await btn.textContent().catch(() => '');
+          const visible = await btn.isVisible().catch(() => false);
+          if (visible && text.trim()) {
+            console.log(`  Button: "${text.trim().substring(0, 30)}"`);
+          }
+        }
+      }
+      
+      let clicked = false;
+      for (const selector of profileButtonSelectors) {
+        try {
+          const btn = page.locator(selector).first();
+          if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+            const btnText = await btn.textContent().catch(() => selector);
+            console.log(`Step ${i + 1}: Clicking "${btnText.trim()}"`);
+            await btn.click();
+            clicked = true;
+            await page.waitForTimeout(1000);
+            break;
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
+      }
+      
+      if (!clicked) {
+        console.log(`No more profile steps found after ${i} steps`);
+        break;
       }
     }
 
