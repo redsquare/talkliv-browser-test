@@ -72,7 +72,7 @@ function generateRandomUserAgent() {
   
   const lastName = `Test`;
   // Using a common burner domain pattern; replace with a real API for production
-  const email = `tester_${randomId}@mail7.io`; 
+  const email = `scum_bags_${randomId}@mail7.io`; 
   const password = `Pass_${randomId}!2026`;
   const userAgent = generateRandomUserAgent();
 
@@ -83,7 +83,11 @@ function generateRandomUserAgent() {
     userAgent: userAgent,
     viewport: { width: 1920, height: 1080 },
     locale: 'en-US',
-    timezoneId: 'America/New_York'
+    timezoneId: 'America/New_York',
+    recordVideo: {
+      dir: './recordings/',
+      size: { width: 1920, height: 1080 }
+    }
   });
   const page = await context.newPage();
 
@@ -155,12 +159,29 @@ function generateRandomUserAgent() {
     const emailInput = page.locator('input[type="email"]');
     if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       await emailInput.fill(email);
-      await page.fill('input[type="password"]', password);
+      console.log(`Filled email: ${email}`);
       
-      // Click submit/continue button
-      const submitBtn = page.getByRole('button', { name: /Complete|Join|Continue|Sign up/i });
-      if (await submitBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await submitBtn.click();
+      await page.fill('input[type="password"]', password);
+      console.log(`Filled password`);
+      
+      // Click submit/continue button - try multiple selectors
+      const submitSelectors = [
+        'button:has-text("Create account")',
+        'button:has-text("Sign up")',
+        'button:has-text("Complete")',
+        'button:has-text("Join")',
+        'button:has-text("Continue")',
+        'button[type="submit"]',
+        'form button'
+      ];
+      
+      for (const selector of submitSelectors) {
+        const btn = page.locator(selector).first();
+        if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          console.log(`Clicking submit button: ${selector}`);
+          await btn.click();
+          break;
+        }
       }
     }
 
@@ -181,6 +202,14 @@ function generateRandomUserAgent() {
   } finally {
     // Brief pause before closing
     await page.waitForTimeout(3000);
+    
+    // Save video path
+    const videoPath = await page.video()?.path();
+    if (videoPath) {
+      console.log(`Video saved to: ${videoPath}`);
+    }
+    
+    await context.close();
     await browser.close();
   }
 })();
