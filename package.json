@@ -1,0 +1,20 @@
+{
+  "name": "talkliv-browser-test",
+  "version": "1.0.0",
+  "description": "Automated browser test for Talkliv using Playwright",
+  "main": "test.js",
+  "scripts": {
+    "test": "node test.js",
+    "postinstall": "npx playwright install chromium"
+  },
+  "keywords": [
+    "playwright",
+    "browser-automation",
+    "testing"
+  ],
+  "author": "steve flitcroft",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.41.0"
+  }
+}
